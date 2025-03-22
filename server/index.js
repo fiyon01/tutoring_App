@@ -4,7 +4,7 @@ const db = require("./config/db");
 
 const app = express();
 
-// Use body-parser for form data
+// Middleware to parse form data
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -13,20 +13,28 @@ const sessions = {};
 // Function to process USSD requests
 const processUSSD = async (req, res) => {
     // Extract parameters safely
-    const sessionId = req.body.sessionId || req.query.sessionId;
-    const phoneNumber = req.body.phoneNumber || req.query.phoneNumber;
+    const sessionId = req.body.sessionId || req.query.sessionId || "";
+    const phoneNumber = req.body.phoneNumber || req.query.phoneNumber || "";
     let text = req.body.text || req.query.text || "";
 
     // Debugging Log
     console.log("USSD Request:", { sessionId, phoneNumber, text });
 
     let response = "";
-    let inputs = text.split("*");
+    let inputs = text ? text.split("*") : [];
 
+    // Validate sessionId
+    if (!sessionId) {
+        console.error("ERROR: Missing sessionId!");
+        return res.status(400).send("END Invalid request. Missing sessionId.");
+    }
+
+    // Initialize session
     if (!sessions[sessionId]) {
         sessions[sessionId] = { students: [], parentName: "", parentPhone: "" };
     }
 
+    // USSD Menu Logic
     if (text === "") {
         response = "CON Welcome to Peak Performance Tutoring!\n1. Register\n2. Fees Info\n3. Contact Us";
     } else if (text === "1") {
@@ -67,7 +75,7 @@ const processUSSD = async (req, res) => {
 
             response = "END Registration successful! A confirmation SMS has been sent.";
         } catch (error) {
-            console.error("Database Error:", error);
+            console.error("Database Error:", error.message, error.stack);
             response = "END Registration failed. Please try again later.";
         }
     } 
@@ -84,10 +92,21 @@ const processUSSD = async (req, res) => {
     res.set("Content-Type", "text/plain");
     res.send(response);
 };
+
+// Routes
 app.get("/ussd", processUSSD);
 app.post("/ussd", processUSSD);
 
 const PORT = process.env.PORT || 3500;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
 });
+
+// Prevent Railway from stopping container unexpectedly
+process.on("SIGTERM", () => {
+    console.log("Received SIGTERM. Shutting down gracefully...");
+    process.exit(0);
+});
+
+// Keep server alive for Railway
+setInterval(() => console.log("✅ App is running..."), 10000);
