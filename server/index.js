@@ -12,11 +12,13 @@ const sessions = {};
 
 // Function to process USSD requests
 const processUSSD = async (req, res) => {
-    const { sessionId, phoneNumber, text } = req.body;
+    // Extract parameters safely
+    const sessionId = req.body.sessionId || req.query.sessionId;
+    const phoneNumber = req.body.phoneNumber || req.query.phoneNumber;
+    let text = req.body.text || req.query.text || "";
 
-    if (!text) {
-        return res.send("END Error: Missing 'text' parameter.");
-    }
+    // Debugging Log
+    console.log("USSD Request:", { sessionId, phoneNumber, text });
 
     let response = "";
     let inputs = text.split("*");
@@ -69,11 +71,9 @@ const processUSSD = async (req, res) => {
             response = "END Registration failed. Please try again later.";
         }
     } 
-    // ✅ Handle Fees Info Option
     else if (text === "2") {
         response = "END Our tutoring fees:\n- Primary: KES 5,000/month\n- High School: KES 7,500/month\n- Payment: M-Pesa Paybill 123456 (Acc: Student Name)";
     } 
-    // ✅ Handle Contact Us Option
     else if (text === "3") {
         response = "END Contact Us:\n📞 0712 345 678\n📧 support@peakperformance.co.ke\n🌍 www.peakperformance.co.ke";
     } 
@@ -84,8 +84,6 @@ const processUSSD = async (req, res) => {
     res.set("Content-Type", "text/plain");
     res.send(response);
 };
-
-// Handle both GET and POST requests for USSD
 app.get("/ussd", processUSSD);
 app.post("/ussd", processUSSD);
 
