@@ -1,18 +1,23 @@
 const express = require("express");
-const db = require("./config/db"); // Database connection
+const bodyParser = require("body-parser");
+const db = require("./config/db");
+
 const app = express();
 
-app.use(express.json()); // Middleware to parse JSON
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data (important for USSD)
+// Use body-parser for form data
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
-const sessions = {}; // Initialize session storage
+const sessions = {};
 
-app.get("/", (req, res) => {
-    res.send("Hello");
-});
-
-app.post("/ussd", async (req, res) => {
+// Function to process USSD requests
+const processUSSD = async (req, res) => {
     const { sessionId, phoneNumber, text } = req.body;
+
+    if (!text) {
+        return res.send("END Error: Missing 'text' parameter.");
+    }
+
     let response = "";
     let inputs = text.split("*");
 
@@ -55,11 +60,6 @@ app.post("/ussd", async (req, res) => {
             const studentValues = students.map(student => [parentId, student.name, student.class]);
             await db.query("INSERT INTO students (parent_id, name, class) VALUES ?", [studentValues]);
 
-            // Send Confirmation SMS (Uncomment & Implement sendSMS function)
-            // let studentList = students.map(s => `${s.name} (${s.class})`).join(", ");
-            // const message = `Hello ${parentName}, your children ${studentList} have been successfully registered for Peak Performance Tutoring.`;
-            // await sendSMS(parentPhone, message);
-
             // Clear session
             delete sessions[sessionId];
 
@@ -68,14 +68,28 @@ app.post("/ussd", async (req, res) => {
             console.error("Database Error:", error);
             response = "END Registration failed. Please try again later.";
         }
-    } else {
+    } 
+    // ✅ Handle Fees Info Option
+    else if (text === "2") {
+        response = "END Our tutoring fees:\n- Primary: KES 5,000/month\n- High School: KES 7,500/month\n- Payment: M-Pesa Paybill 123456 (Acc: Student Name)";
+    } 
+    // ✅ Handle Contact Us Option
+    else if (text === "3") {
+        response = "END Contact Us:\n📞 0712 345 678\n📧 support@peakperformance.co.ke\n🌍 www.peakperformance.co.ke";
+    } 
+    else {
         response = "END Invalid option. Try again.";
     }
 
     res.set("Content-Type", "text/plain");
     res.send(response);
-});
+};
 
-app.listen(3500, () => {
-    console.log("Server running on port 3500");
+// Handle both GET and POST requests for USSD
+app.get("/ussd", processUSSD);
+app.post("/ussd", processUSSD);
+
+const PORT = process.env.PORT || 3500;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
