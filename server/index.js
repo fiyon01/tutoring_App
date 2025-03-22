@@ -13,7 +13,7 @@ const sessions = {};
 // Function to process USSD requests
 const processUSSD = async (req, res) => {
     // Extract parameters safely
-    const sessionId = req.body.sessionId || req.query.sessionId || "";
+    const sessionId = req.body.sessionId || req.query.sessionId || `debug-${Date.now()}`;
     const phoneNumber = req.body.phoneNumber || req.query.phoneNumber || "";
     let text = req.body.text || req.query.text || "";
 
@@ -94,7 +94,7 @@ const processUSSD = async (req, res) => {
 };
 
 // Routes
-app.get("/ussd", processUSSD);
+
 app.post("/ussd", processUSSD);
 
 const PORT = process.env.PORT || 3500;
