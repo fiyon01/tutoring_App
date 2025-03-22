@@ -80,7 +80,7 @@ const processUSSD = async (req, res) => {
         }
     } 
     else if (text === "2") {
-        response = "END Our tutoring fees:\n- Primary: KES 5,000/month\n- High School: KES 7,500/month\n- Payment: M-Pesa Paybill 123456 (Acc: Student Name)";
+        response = "END Our tutoring fees:\n- Private-tutoring: KES 500/2hrs\n- Combined-package: KES 750/week\n- Payment: M-Pesa Till Number 4272666";
     } 
     else if (text === "3") {
         response = "END Contact Us:\n📞 0798971625\n🌍 www.peakperformance.co.ke";
